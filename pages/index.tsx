@@ -7,7 +7,7 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import { PriceData } from '@/utils/models/priceData';
 import { fetchPriceDataOnYahooAuction } from '@/utils/yahoo/fetchValue';
-import { PriceInfoItem } from './PriceInfoItem';
+import { PriceInfoItem } from '@/components/PriceInfoItem';
 import { titles } from 'consts/titles';
 import { Grid } from '@mui/material';
 

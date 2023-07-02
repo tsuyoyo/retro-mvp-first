@@ -40,7 +40,7 @@ const PriceInfo: React.FC<{ price: PriceData }> = ({ price }) => {
 
 export const PriceInfoItem: React.FC<PriceInfoItemProps> = ({ title, priceData }) => {
   return (
-    <Card sx={{ marginTop: 1, marginBottom: 1 }}>
+    <Card>
       <CardContent>
         <Typography variant='h5'>{title}</Typography>
         <PriceInfo price={priceData} />

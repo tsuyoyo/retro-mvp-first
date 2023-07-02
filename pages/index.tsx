@@ -37,10 +37,10 @@ export default function Home({ data }: InferGetServerSidePropsType<typeof getSer
   return (
     <main>
       <div>
-        <Grid container spacing={2}>
+        <Grid container spacing={2} style={{ margin: 4 }}>
           {data.map((d) => {
             return (
-              <Grid item xs={4} key={d.title}>
+              <Grid item xs={12} sm={6} md={4} lg={3} key={d.title}>
                 <PriceInfoItem title={d.title} priceData={d.priceData} />
               </Grid>
             );

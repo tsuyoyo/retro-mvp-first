@@ -10,9 +10,7 @@ const Home: React.FC = () => {
       setFile(selectedFile);
 
       const reader = new FileReader();
-
-      // memo: base64でpostする形にして、アプリからも使いやすい様にしておきたい
-      reader.onload = async (event) => {
+      reader.onload = async () => {
         const base64Text = reader.result;
         const task = await fetch('/api/upload', {
           method: 'POST',
@@ -31,9 +29,7 @@ const Home: React.FC = () => {
   const handleUpload = async () => {
     if (file) {
       const reader = new FileReader();
-
-      // memo: base64でpostする形にして、アプリからも使いやすい様にしておきたい
-      reader.onload = async (event) => {
+      reader.onload = async () => {
         const base64Text = reader.result;
         console.log(base64Text);
         const response = await fetch('/api/upload', {
@@ -46,24 +42,6 @@ const Home: React.FC = () => {
         console.log(response.status);
       };
       reader.readAsDataURL(file);
-
-      // const formData = new FormData();
-      // formData.append('image', file);
-
-      // try {
-      //   const response = await fetch('/api/upload', {
-      //     method: 'POST',
-      //     body: formData,
-      //   });
-
-      //   if (response.ok) {
-      //     console.log('画像がアップロードされました');
-      //   } else {
-      //     console.error('画像のアップロードに失敗しました');
-      //   }
-      // } catch (error) {
-      //   console.error('エラー:', error);
-      // }
     }
   };
 

@@ -1,35 +1,52 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
 import formidable from 'formidable';
-import { createWriteStream } from 'fs';
+import fs, { createWriteStream } from 'fs';
+import { storage } from 'helpers/firebase';
+import { ref, uploadBytes, getDownloadURL } from '@firebase/storage';
 
 const UPLOADED_FOLDER = './uploads';
 
 export const config = {
   api: {
-    bodyParser: false,
+    // bodyParser: false,
+    bodyParser: {
+      sizeLimit: '4mb',
+    },
   },
 };
 
 type Data = {
   name: string;
+  downloadUrl: string;
+};
+
+type Error = {
+  message: string;
+};
+
+const generateStorageFileRef = (fileName: string) => ref(storage, `/images/${fileName}`);
+
+const uploadImageToFirebase = async (
+  image: File | Buffer,
+  storageReference: ReturnType<typeof ref>,
+  metadata?: Record<string, string>,
+) => {
+  const result = await uploadBytes(storageReference, image, metadata);
+  const downloadUrl = await getDownloadURL(storageReference);
+  console.log(`name: ${result.metadata.name}, downloadUrl: ${downloadUrl}`);
+  return {
+    result,
+    downloadUrl,
+  };
 };
 
 // https://zenn.dev/niccari/articles/f95c0a31ed40a1
-const handler = async (req: NextApiRequest, res: NextApiResponse<Data | undefined>) => {
-  if (req.method !== 'POST') {
-    return;
-  }
-  if (!req.headers['content-type']?.includes('multipart/form-data')) {
-    res.status(400).send(undefined);
-    return;
-  }
+const handleRequestByMultipartFormData = async (
+  req: NextApiRequest,
+  res: NextApiResponse<Data | Error>,
+) => {
   const form = formidable({ multiples: true, uploadDir: __dirname });
-
-  // Memo:
-  // form.parse(req) を呼ぶと、順々にcallbackが呼ばれる模様
-  // callbackを設定 -> parseという流れでファイルのhandlingをするのが良さげ?
-  // https://qiita.com/dimyasvariant/items/2dc9872684f487f8324d
   form.onPart = (part) => {
     if (part.originalFilename === '' || !part.mimetype) {
       form._handlePart(part);
@@ -38,45 +55,84 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<Data | undefine
         ? part.originalFilename.slice(0)
         : part.originalFilename;
       const fileName = `${new Date().getTime()}-${originalFileName}`;
-      const stream = createWriteStream(`${UPLOADED_FOLDER}/${fileName}`);
 
-      part.pipe(stream);
+      const tmpFilePath = `${UPLOADED_FOLDER}/${fileName}`;
+      const stream = createWriteStream(tmpFilePath);
 
       part.on('end', () => {
-        console.log(part.originalFilename + ' is uploaded');
-        stream.close();
-
-        res.status(200).send({
-          name: fileName,
+        stream.close(async () => {
+          if (!fs.existsSync(tmpFilePath)) {
+            res.status(500).send({ message: `${tmpFilePath} doesn't exist` });
+            return;
+          }
+          try {
+            const { result, downloadUrl } = await uploadImageToFirebase(
+              fs.readFileSync(tmpFilePath),
+              generateStorageFileRef(fileName),
+            );
+            res.status(200).send({
+              name: result.metadata.name,
+              downloadUrl,
+            });
+          } catch (e) {
+            console.log(e);
+            res.status(500).send({ message: 'Failed to upload image to firebase' });
+          }
         });
       });
+      part.pipe(stream);
     }
   };
-
   form.once('error', (e) => {
-    res.status(500).send(e);
+    console.log(e);
+    res.status(500).send({ message: `Failed to parse a form : ${e.toStart()}` });
   });
+  form.parse(req);
+};
 
-  form.parse(req, async (err, fields, files) => {
-    console.log('Call back of form.parse');
-    // if (!Object.hasOwn(files, 'image')) {
-    //   throw new Error('imageFile not specified.');
-    // }
-    // if (err) {
-    //   res.statusCode = 500;
-    //   res.end();
-    //   return;
-    // }
-    // const images = files['image'];
-    // const imageFile = Array.isArray(images) ? images[0] : images;
+// Ref: https://dev.classmethod.jp/articles/node-js-base64-encoded-image-to-s3/
+const decodeBase64Data = (encodedData: string) => {
+  return {
+    data: Buffer.from(encodedData.replace(/^data:\w+\/\w+;base64,/, ''), 'base64'),
+    extension: encodedData.slice(encodedData.indexOf('/') + 1, encodedData.indexOf(';')),
+    contentType: encodedData.slice(encodedData.indexOf(':') + 1, encodedData.indexOf(';')),
+  };
+};
 
-    // console.log('file size - ' + imageFile.size);
-    // // ファイルをなんやかんやする
+const handleRequestByJson = async (req: NextApiRequest, res: NextApiResponse<Data | Error>) => {
+  const { data, extension, contentType } = decodeBase64Data(req.body.img);
 
-    // res.status(200).send({
-    //   name: 'Uploaded file size - ' + imageFile.size,
-    // });
-  });
+  // TODO: ここで画像を圧縮できるとよさそう
+  // https://www.npmjs.com/package/browser-image-compression
+  const fileName = `${new Date().getTime()}.${extension}`;
+  const imageFileRef = generateStorageFileRef(fileName);
+  const metadata = {
+    contentType,
+  };
+
+  try {
+    const { result, downloadUrl } = await uploadImageToFirebase(data, imageFileRef, metadata);
+    res.status(200).send({
+      name: result.ref.name,
+      downloadUrl,
+    });
+  } catch (e) {
+    res.status(500);
+  }
+};
+
+const handler = async (req: NextApiRequest, res: NextApiResponse<Data | Error>) => {
+  if (req.method !== 'POST') {
+    res.status(400).send({ message: `${req.method} is not acceptable` });
+  } else if (req.headers['content-type']?.includes('application/json')) {
+    handleRequestByJson(req, res);
+  }
+  // else if (req.headers['content-type']?.includes('multipart/form-data')) {
+  //   handleRequestByMultipartFormData(req, res);
+  // }
+  else {
+    res.status(400).send({ message: 'Unexpected request was sent' });
+  }
 };
 
 export default handler;

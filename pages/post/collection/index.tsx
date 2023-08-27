@@ -1,5 +1,4 @@
 import React, { useState, ChangeEvent } from 'react';
-import { db } from '@/helpers/firebaseAdmin';
 
 const Home: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -28,12 +27,6 @@ const Home: React.FC = () => {
   };
 
   const handleUpload = async () => {
-    const docRef = db.collection('users').doc('alovelace');
-    docRef.set({
-      first: 'Ada',
-      last: 'Lovelace',
-      born: 1815,
-    });
     // if (file) {
     //   const reader = new FileReader();
     //   reader.onload = async () => {

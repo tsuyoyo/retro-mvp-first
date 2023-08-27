@@ -27,22 +27,22 @@ const Home: React.FC = () => {
   };
 
   const handleUpload = async () => {
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64Text = reader.result;
-        console.log(base64Text);
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ img: base64Text }),
-        });
-        console.log(response.status);
-      };
-      reader.readAsDataURL(file);
-    }
+    // if (file) {
+    //   const reader = new FileReader();
+    //   reader.onload = async () => {
+    //     const base64Text = reader.result;
+    //     console.log(base64Text);
+    //     const response = await fetch('/api/upload', {
+    //       method: 'POST',
+    //       headers: {
+    //         'Content-Type': 'application/json',
+    //       },
+    //       body: JSON.stringify({ img: base64Text }),
+    //     });
+    //     console.log(response.status);
+    //   };
+    //   reader.readAsDataURL(file);
+    // }
   };
 
   return (

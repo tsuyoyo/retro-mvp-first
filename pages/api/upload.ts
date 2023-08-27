@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
-import { storage } from 'helpers/firebase';
+import { storage } from '@/helpers/firebase';
 import { ref, uploadBytes, getDownloadURL } from '@firebase/storage';
 
 export const config = {
@@ -72,7 +72,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<Data | Error>) 
   if (req.method !== 'POST') {
     res.status(400).send({ message: `${req.method} is not acceptable` });
   } else if (req.headers['content-type']?.includes('application/json')) {
-    handleRequestByJson(req, res);
+    return handleRequestByJson(req, res);
   } else {
     res.status(400).send({ message: 'Unexpected request was sent' });
   }

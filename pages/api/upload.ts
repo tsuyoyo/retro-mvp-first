@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
-import { storage } from 'helpers/firebase';
+import { storage } from '@/helpers/firebase';
 import { ref, uploadBytes, getDownloadURL } from '@firebase/storage';
 
 export const config = {

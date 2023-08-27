@@ -1,7 +1,7 @@
 import admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 
-const serviceAccount = require('../credentials/serviceAccountKey.json');
+const serviceAccount = require('@/credentials/serviceAccountKey.json');
 
 export const firebase = !admin.apps.length
   ? admin.initializeApp({
